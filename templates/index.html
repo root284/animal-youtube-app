@@ -591,6 +591,11 @@ textarea,input[type="text"]{font-family:'Noto Sans KR',-apple-system,sans-serif;
     <div class="card">
       <div class="card-title">📦 아카이브</div>
       <p class="card-sub">저장된 콘텐츠 목록입니다. 항목을 선택하면 새 탭에서 열립니다. 최대 50개 저장됩니다.</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn btn-ghost-gray btn-xs" onclick="exportArchive()">⬇ 내보내기</button>
+        <button class="btn btn-ghost-gray btn-xs" onclick="document.getElementById('import-file-input').click()">⬆ 가져오기</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importArchive(event)">
+      </div>
       <div id="archive-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;">
         아직 저장된 항목이 없습니다.<br>
         <span style="font-size:12px;margin-top:8px;display:block;">콘텐츠 제작 완료 후 "💾 저장" 버튼을 누르면 여기에 저장됩니다.</span>
@@ -1621,6 +1626,43 @@ function _openArchiveById(id) {
   const item=_archiveItemMap[id];
   if(!item) return;
   openArchiveItem(item);
+}
+
+function exportArchive() {
+  const archive=getArchive();
+  if(!archive.length){showToast('저장된 항목이 없습니다.');return;}
+  const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const today=new Date();
+  const dateStr=today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
+  a.href=url; a.download=`mohana_archive_${dateStr}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`${archive.length}개 항목을 내보냈습니다.`);
+}
+
+function importArchive(event) {
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!Array.isArray(imported)){showToast('올바른 아카이브 파일이 아닙니다.');return;}
+      const existing=getArchive();
+      const existingIds=new Set(existing.map(a=>a.id));
+      const newItems=imported.filter(a=>a.id&&!existingIds.has(a.id));
+      if(!newItems.length){showToast('추가할 새 항목이 없습니다 (이미 모두 존재합니다).');return;}
+      const merged=[...newItems,...existing].slice(0,50);
+      localStorage.setItem(ARCHIVE_KEY,JSON.stringify(merged));
+      renderArchiveList();
+      showToast(`${newItems.length}개 항목을 가져왔습니다.`);
+    }catch(err){
+      showToast('파일을 읽는 중 오류가 발생했습니다.');
+    }
+    event.target.value='';
+  };
+  reader.readAsText(file);
 }
 
 // ── Mode initialization ───────────────────────────────────────────────────
