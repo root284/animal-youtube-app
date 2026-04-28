@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모하나TV 콘텐츠 생성기</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#FF6B35; --orange-light:#FFF0EA; --orange-dark:#E05820;
+  --teal:#26B89A; --teal-light:#E6F7F4;
+  --purple:#7C5CBF; --purple-light:#F3EFFF;
+  --indigo:#4A6FD4; --indigo-light:#EEF2FF;
+  --green:#2E7D32; --green-light:#E8F5E9;
+  --bg:#F4F6F9; --white:#FFFFFF; --text:#1E2433; --muted:#7B8499; --border:#E2E8F0;
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.06);
+  --radius:16px; --radius-sm:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,var(--orange) 0%,#FF9A5C 100%);color:white;padding:18px 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(255,107,53,.35)}
+.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
+.header-title{text-align:center;}
+.header-title h1{font-size:21px;font-weight:900;letter-spacing:-.5px}
+.header-title p{font-size:12px;opacity:.88;margin-top:2px}
+.btn-restart{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);color:white;padding:6px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all .18s;white-space:nowrap}
+.btn-restart:hover{background:rgba(255,255,255,.35)}
+
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+
+/* ── Step Nav ── */
+.step-nav{display:flex;align-items:center;justify-content:center;margin-bottom:32px;background:var(--white);border-radius:var(--radius);padding:16px 24px;box-shadow:var(--shadow-sm);flex-wrap:wrap;gap:4px}
+.step-node{display:flex;align-items:center;gap:10px}
+.step-badge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:2.5px solid var(--border);background:var(--bg);color:var(--muted);transition:all .25s;flex-shrink:0}
+.step-badge.active{background:var(--orange);border-color:var(--orange);color:white;box-shadow:0 0 0 4px rgba(255,107,53,.18)}
+.step-badge.done{background:var(--teal);border-color:var(--teal);color:white}
+.step-name{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.step-name.active{color:var(--orange)}
+.step-name.done{color:var(--teal)}
+.step-line{width:28px;height:2px;background:var(--border);margin:0 2px;flex-shrink:0}
+.step-line.done{background:var(--teal)}
+
+/* ── Card ── */
+.card{background:var(--white);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow-sm);margin-bottom:20px}
+.card-title{font-size:19px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+.card-sub{color:var(--muted);font-size:13px;margin-bottom:22px;line-height:1.5}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 22px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit;transition:all .18s;line-height:1;white-space:nowrap}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+.btn-primary{background:var(--orange);color:white}
+.btn-primary:hover:not(:disabled){background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,107,53,.35)}
+.btn-teal{background:var(--teal);color:white}
+.btn-teal:hover:not(:disabled){background:#1f9e86;transform:translateY(-1px)}
+.btn-indigo{background:var(--indigo);color:white}
+.btn-indigo:hover:not(:disabled){background:#3a5fc4;transform:translateY(-1px)}
+.btn-ghost{background:white;color:var(--orange);border:2px solid var(--orange)}
+.btn-ghost:hover:not(:disabled){background:var(--orange-light)}
+.btn-ghost-purple{background:white;color:var(--purple);border:2px solid var(--purple)}
+.btn-ghost-purple:hover:not(:disabled){background:var(--purple-light)}
+.btn-ghost-gray{background:white;color:var(--muted);border:2px solid var(--border)}
+.btn-ghost-gray:hover:not(:disabled){background:var(--bg);color:var(--text)}
+.btn-purple{background:var(--purple);color:white}
+.btn-purple:hover:not(:disabled){background:#6a4daa;transform:translateY(-1px)}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn-xs{padding:5px 10px;font-size:12px}
+.action-row{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;align-items:center}
+
+/* ── Loading ── */
+.loading{display:flex;align-items:center;justify-content:center;gap:14px;padding:44px 20px;color:var(--muted);font-size:14px}
+.loading-phases{display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 20px}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.spinner-sm{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;display:inline-block}
+.spinner-indigo{border-top-color:var(--indigo)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-phase{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);transition:color .3s}
+.loading-phase.active{color:var(--orange);font-weight:600}
+.loading-phase.done{color:var(--teal)}
+.phase-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s;flex-shrink:0}
+.loading-phase.active .phase-dot{background:var(--orange);box-shadow:0 0 0 3px rgba(255,107,53,.25)}
+.loading-phase.done .phase-dot{background:var(--teal)}
+.section-loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;padding:8px 0}
+
+/* ── Section label ── */
+.section-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Item cards ── */
+.item-grid{display:flex;flex-direction:column;gap:10px}
+.item-card{border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;cursor:pointer;transition:all .18s;display:flex;align-items:flex-start;gap:12px}
+.item-card:hover{border-color:var(--orange);background:var(--orange-light)}
+.item-card.selected{border-color:var(--orange);background:var(--orange-light)}
+.item-card-body{flex:1;min-width:0}
+.item-title{font-weight:700;font-size:14px;margin-bottom:4px}
+.item-desc{color:var(--muted);font-size:13px;margin-bottom:4px;line-height:1.4}
+.item-reason{color:var(--orange);font-size:12px;font-weight:600}
+.item-link{font-size:12px;color:var(--indigo);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;margin-top:5px}
+.item-link:hover{text-decoration:underline}
+.item-num{width:28px;height:28px;border-radius:50%;background:var(--bg);color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;transition:all .18s}
+.item-card.selected .item-num{background:var(--orange);color:white}
+
+/* ── Or divider ── */
+.or-divider{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13px;margin:22px 0}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Inputs ── */
+textarea,input[type="text"]{font-family:'Noto Sans KR',-apple-system,sans-serif;font-size:14px;color:var(--text)}
+.textarea-manual{width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);resize:vertical;line-height:1.7;min-height:100px;transition:border-color .18s}
+.textarea-manual:focus{outline:none;border-color:var(--orange)}
+.textarea-comment{width:100%;padding:12px 14px;border:2px solid var(--purple);border-radius:8px;resize:vertical;line-height:1.7;min-height:72px;transition:border-color .18s;background:var(--purple-light)}
+.textarea-comment:focus{outline:none;border-color:var(--purple)}
+.script-textarea{width:100%;min-height:420px;padding:18px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:14px;line-height:1.9;resize:vertical;transition:border-color .18s}
+.script-textarea:focus{outline:none;border-color:var(--orange)}
+.edit-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;transition:border-color .18s;background:var(--bg)}
+.edit-input:focus{outline:none;border-color:var(--orange);background:white}
+.edit-input-sm{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;transition:border-color .18s;background:var(--bg)}
+.edit-input-sm:focus{outline:none;border-color:var(--orange);background:white}
+
+/* ── Info banner ── */
+.info-banner{background:linear-gradient(135deg,#FFF0EA,#FFF8F0);border:1px solid #FFD4BB;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:#C05020;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+
+/* ── Prompt box / textarea ── */
+.prompt-box{background:#F8FAFB;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;word-break:break-all;font-family:'SF Mono','Fira Code',monospace;max-height:180px;overflow-y:auto}
+.prompt-textarea{width:100%;min-height:90px;padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:12.5px;line-height:1.8;resize:vertical;font-family:'SF Mono','Fira Code',monospace;background:#F8FAFB;transition:border-color .18s;word-break:break-all}
+.prompt-textarea:focus{outline:none;border-color:var(--orange);background:white}
+
+/* ── Result card ── */
+.result-card{background:var(--white);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow-sm);margin-bottom:16px;border:1px solid var(--border)}
+.rc-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.rc-icon{font-size:18px;flex-shrink:0}
+.rc-label{font-size:16px;font-weight:800;flex:1;letter-spacing:-.2px}
+.rc-actions{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto}
+
+/* ── Notices ── */
+.real-footage-notice{background:linear-gradient(135deg,#FFF8E1,#FFFDE7);border:1.5px solid #FFD54F;border-radius:var(--radius-sm);padding:14px 16px;font-size:14px;line-height:1.6}
+.real-footage-notice strong{color:#F57F17}
+.real-footage-query{font-size:13px;color:#5D4037;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.host-notice{background:linear-gradient(135deg,var(--indigo-light),#F0F4FF);border:1.5px solid #9BAFD8;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;line-height:1.5;margin-bottom:8px}
+.host-notice strong{color:var(--indigo)}
+
+/* ── Comment section ── */
+.comment-section{background:var(--purple-light);border:2px solid var(--purple);border-radius:var(--radius-sm);padding:16px;margin-top:14px}
+.comment-section-title{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.comment-apply-row{display:flex;gap:8px;margin-top:10px}
+
+/* ── Storyboard ── */
+.storyboard-list{display:flex;flex-direction:column;gap:14px}
+.scene-card{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.scene-header{background:var(--teal);color:white;padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.scene-num{font-size:12px;font-weight:800;background:rgba(255,255,255,.25);padding:2px 8px;border-radius:12px}
+.scene-name{font-size:14px;font-weight:700;flex:1}
+.scene-dur{font-size:12px;opacity:.85}
+.scene-actions{display:flex;gap:5px;margin-left:auto}
+.scene-body{padding:14px 16px;background:var(--teal-light)}
+.scene-row{display:flex;gap:6px;font-size:13px;margin-bottom:6px;line-height:1.5}
+.scene-row:last-child{margin-bottom:0}
+.scene-key{font-weight:700;color:var(--teal);white-space:nowrap;min-width:42px}
+.scene-script-text{font-size:13px;color:var(--indigo);font-style:italic;background:var(--indigo-light);border-radius:6px;padding:8px 12px;margin:8px 0;line-height:1.6;border-left:3px solid var(--indigo)}
+.scene-extra{margin-top:12px;padding-top:12px;border-top:1px dashed #A8DDD5}
+.scene-img-label{font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.scene-img-gen-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.scene-img-result{margin-top:10px}
+.scene-img-result img{width:100%;border-radius:8px;display:block;background:#EEF2FF}
+.scene-img-result-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.scene-img-cbox{margin-top:8px;display:none}
+
+/* ── TTS section ── */
+.scene-tts-section{margin-top:12px;padding-top:12px;border-top:1px dashed #A8DDD5;display:flex;flex-direction:column;gap:8px}
+
+/* ── Scene voice selector ── */
+.scene-voice-select{width:100%;padding:7px 10px;border:1.5px solid var(--teal);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white);color:var(--text);cursor:pointer;transition:border-color .18s}
+.scene-voice-select:focus{outline:none;border-color:var(--teal)}
+.tts-config-label{font-size:12px;font-weight:700;color:var(--teal);margin-bottom:8px}
+.voice-select{flex:1;padding:9px 12px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--white);color:var(--text);cursor:pointer;transition:border-color .18s}
+.voice-select:focus{outline:none;border-color:var(--teal)}
+.voice-selector-row{display:flex;gap:8px;align-items:center}
+
+/* ── Speed slider ── */
+.tts-speed-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--teal-light);border-radius:var(--radius-sm);margin-bottom:14px;border:1px solid #A8DDD5;}
+.tts-speed-label{font-size:13px;font-weight:700;color:var(--teal);white-space:nowrap;}
+.tts-speed-val{font-size:13px;font-weight:800;color:var(--teal);min-width:42px;text-align:right;}
+#tts-speed-slider{flex:1;cursor:pointer;accent-color:var(--teal);}
+
+/* ── Character voice section ── */
+.char-voice-box{margin-top:10px;padding:12px;background:rgba(255,107,53,.07);border-radius:8px;border:1.5px solid var(--orange);}
+.char-voice-box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.char-voice-label{font-size:12px;font-weight:700;color:var(--orange);}
+.char-voice-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ── Footage gallery ── */
+.footage-gallery{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.footage-thumb{height:72px;border-radius:6px;cursor:pointer;object-fit:cover;border:2px solid transparent;transition:border-color .15s}
+.footage-thumb:hover{border-color:var(--orange)}
+.footage-thumb.active{border-color:var(--orange)}
+.footage-selected{margin-top:8px}
+.footage-selected img{width:100%;border-radius:8px;display:block}
+
+/* ── Fact check ── */
+.fact-check-box{margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+.fact-item{display:flex;gap:12px;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;background:var(--white);align-items:flex-start}
+.fact-status{font-size:16px;flex-shrink:0;margin-top:1px}
+.fact-claim{font-size:13px;font-weight:700;margin-bottom:3px}
+.fact-detail{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* ── Script chat ── */
+.script-chat-box{margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+.chat-messages{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.chat-msg{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;line-height:1.6}
+.chat-msg-user{background:var(--orange-light);border:1px solid #FFD4BB;align-self:flex-end;max-width:85%}
+.chat-msg-ai{background:var(--indigo-light);border:1px solid #C5D0F0;align-self:flex-start;max-width:90%}
+.chat-msg-label{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px}
+.chat-input-row{display:flex;gap:8px}
+.chat-text-input{flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;transition:border-color .18s;min-width:0;background:var(--bg)}
+.chat-text-input:focus{outline:none;border-color:var(--orange);background:white}
+
+/* ── Collapsible ── */
+.collapsible-header{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding:4px 0}
+.collapsible-header:hover .collapsible-chevron{color:var(--orange)}
+.collapsible-chevron{font-size:16px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.collapsible-chevron.open{transform:rotate(180deg)}
+.collapsible-body{margin-top:16px}
+
+/* ── Misc ── */
+.char-counter{font-size:12px;color:var(--muted)}
+.char-counter.ok{color:var(--teal);font-weight:600}
+.char-counter.over{color:var(--orange);font-weight:600}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.header-row .section-label{margin-bottom:0;flex:1}
+.copy-btn{background:none;border:1px solid var(--border);padding:5px 11px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--muted);font-family:inherit;font-weight:600;transition:all .15s}
+.copy-btn:hover{background:var(--bg);color:var(--text);border-color:var(--muted)}
+.copy-btn-xs{background:none;border:1px solid #C5B8E8;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px;color:var(--purple);font-family:inherit;font-weight:600;transition:all .15s}
+.copy-btn-xs:hover{background:var(--purple-light)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:white;padding:12px 24px;border-radius:100px;font-size:14px;font-weight:600;z-index:9999;opacity:0;transition:all .28s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.step-panel{display:none}
+.step-panel.active{display:block}
+.error-box{background:#FFF2F2;border:1px solid #FFB8B8;border-radius:var(--radius-sm);padding:14px 16px;font-size:13px;color:#C03030;margin-top:12px;line-height:1.5}
+
+/* ── Image gen notice ── */
+.img-gen-notice{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;line-height:1.5}
+.img-gen-notice-host{background:linear-gradient(135deg,var(--indigo-light),#F0F4FF);border:1.5px solid #9BAFD8;color:var(--indigo)}
+.img-gen-notice-footage{background:linear-gradient(135deg,#FFF8E1,#FFFDE7);border:1.5px solid #FFD54F;color:#5D4037}
+.img-notice-link{font-size:12px;font-weight:700;color:var(--indigo);text-decoration:none;border:1px solid #9BAFD8;padding:3px 9px;border-radius:6px;white-space:nowrap;background:white}
+.img-notice-link:hover{background:var(--indigo-light)}
+
+/* ── Archive ── */
+.btn-archive{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);color:white;padding:6px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all .18s;white-space:nowrap}
+.btn-archive:hover{background:rgba(255,255,255,.35)}
+.archive-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.archive-item{border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:flex-start;gap:12px;background:white;transition:border-color .18s;cursor:pointer}
+.archive-item:hover{border-color:var(--teal)}
+.archive-item-body{flex:1;min-width:0}
+.archive-item-title{font-weight:700;font-size:14px;margin-bottom:3px}
+.archive-item-sub{color:var(--muted);font-size:12px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archive-item-date{font-size:11px;color:var(--muted);margin-top:3px}
+.archive-item-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0}
+
+@media(max-width:600px){
+  .wrap{padding:20px 12px 50px}
+  .card,.result-card{padding:18px 14px}
+  .step-line{width:16px}
+  .step-name{display:none}
+  .action-row,.rc-actions,.comment-apply-row{flex-direction:column}
+  .action-row .btn,.comment-apply-row .btn{width:100%;justify-content:center}
+  .scene-actions{margin-left:0;width:100%;margin-top:6px}
+  .voice-selector-row{flex-direction:column}
+  .voice-select{width:100%}
+  .btn-restart{font-size:11px;padding:5px 9px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <button class="btn-archive" id="btn-archive-header" onclick="openArchiveTab()">📦 아카이브</button>
+    <div class="header-title">
+      <h1>🐾 모하나TV 콘텐츠 생성기</h1>
+    </div>
+    <button class="btn-restart" id="btn-restart-header" onclick="confirmStartOver()">↺ 처음부터</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="step-nav">
+    <div class="step-node">
+      <div class="step-badge active" id="sb1">1</div>
+      <div class="step-name active" id="sn1">아이템 선택</div>
+    </div>
+    <div class="step-line" id="sl1"></div>
+    <div class="step-node">
+      <div class="step-badge" id="sb2">2</div>
+      <div class="step-name" id="sn2">스크립트</div>
+    </div>
+    <div class="step-line" id="sl2"></div>
+    <div class="step-node">
+      <div class="step-badge" id="sb3">3</div>
+      <div class="step-name" id="sn3">제목·썸네일·콘티</div>
+    </div>
+  </nav>
+
+  <!-- ══ STEP 1 ══ -->
+  <div class="step-panel active" id="panel-1">
+    <div class="card">
+      <div class="card-title">1단계: 콘텐츠 아이템 선택</div>
+      <p class="card-sub">최근 화제된 동물 뉴스를 자동 검색하거나, 직접 아이디어를 입력하세요.</p>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="btn-search" onclick="searchItems()">🔍 동물 뉴스 자동 검색</button>
+        <input type="text" id="search-direction" class="chat-text-input"
+          placeholder="방향 지정 (예: 공룡, 최근 화제된 것만...)"
+          style="flex:1;min-width:160px;max-width:340px;"
+          onkeydown="if(event.key==='Enter'&&!event.isComposing)searchItems()" />
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-top:8px;">방향 입력 없이 검색하면 최신 화제 동물 이야기를 자동으로 찾아드립니다. (10~20초 소요)</p>
+
+      <div id="s1-loading" class="loading" style="display:none;">
+        <div class="spinner"></div><span>최근 동물 뉴스 검색 중...</span>
+      </div>
+
+      <div id="s1-results" style="display:none;margin-top:22px;">
+        <div class="section-label">검색 결과 — 아이템을 클릭해서 선택하세요</div>
+        <div class="item-grid" id="items-list"></div>
+        <div class="action-row" id="item-action-row" style="display:none;">
+          <button class="btn btn-primary" onclick="selectItemAuto()">✍️ 스크립트 자동 생성</button>
+          <button class="btn btn-ghost" onclick="selectItemDirect()">📝 스크립트 직접 입력</button>
+          <button class="btn btn-ghost-gray btn-sm" onclick="searchItems()">🔄 다시 검색</button>
+        </div>
+        <div id="item-action-hint" style="display:none;"></div>
+      </div>
+      <div id="s1-error" class="error-box" style="display:none;">
+        <span id="s1-error-msg"></span>
+        <div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="searchItems()">↺ 다시 시도</button></div>
+      </div>
+
+      <div class="or-divider">또는 직접 입력</div>
+
+      <textarea class="textarea-manual" id="manual-item"
+        placeholder="예: 강아지가 아기 고양이를 입양해 함께 키우는 영상이 화제&#10;예: 문어가 코코넛 껍질로 집 짓는 모습이 포착됨"
+      ></textarea>
+      <div class="action-row" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="selectManualAuto()">✍️ 스크립트 자동 생성</button>
+        <button class="btn btn-ghost" onclick="selectManualDirect()">📝 스크립트 직접 입력</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2 ══ -->
+  <div class="step-panel" id="panel-2">
+    <div class="card">
+      <div class="card-title">2단계: 스크립트 생성</div>
+      <p class="card-sub">아이템을 웹서치로 심층 조사 후, 모하나가 진행하는 700~1000자 스크립트를 생성합니다.</p>
+
+      <div class="info-banner">📌 <span id="s2-item-text"></span></div>
+
+      <div id="s2-loading" class="loading-phases" style="display:none;">
+        <div class="spinner"></div>
+        <div class="loading-phase active" id="phase-search">
+          <div class="phase-dot"></div> 🔍 아이템 디테일 웹서치 중...
+        </div>
+        <div class="loading-phase" id="phase-write">
+          <div class="phase-dot"></div> ✍️ 스크립트 생성 중...
+        </div>
+      </div>
+
+      <div id="s2-results" style="display:none;">
+        <div class="header-row">
+          <div class="section-label">생성된 스크립트 (직접 수정 가능)</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="char-counter" id="char-counter">0자</span>
+            <button class="copy-btn" onclick="copyText('script-ta','스크립트')">📋 복사</button>
+          </div>
+        </div>
+        <textarea class="script-textarea" id="script-ta" oninput="updateCharCount()"></textarea>
+
+        <div class="action-row">
+          <button class="btn btn-primary" onclick="proceedToStep3()">제목·썸네일·콘티 생성 →</button>
+          <button class="btn btn-ghost btn-sm" onclick="regenScript()">🔄 다시 작성</button>
+          <button class="btn btn-ghost-purple btn-sm" onclick="toggleComment('script')">✏️ 코멘트로 수정</button>
+          <button class="btn btn-ghost-gray btn-sm" id="btn-item-change" onclick="goStep(1)">← 아이템 변경</button>
+        </div>
+
+        <div class="comment-section" id="cbox-script" style="display:none;">
+          <div class="comment-section-title">✏️ 스크립트 수정 요청</div>
+          <textarea class="textarea-comment" id="ctext-script"
+            placeholder="예: 인트로를 더 임팩트 있게&#10;예: 동물 인터뷰 분량 늘려줘"></textarea>
+          <div class="comment-apply-row">
+            <button class="btn btn-purple btn-sm" onclick="applyScriptComment()">✅ 수정 적용</button>
+            <button class="btn btn-ghost-gray btn-sm" onclick="closeComment('script')">취소</button>
+          </div>
+          <div id="script-comment-loading" style="display:none;" class="section-loading">
+            <div class="spinner-sm"></div> 스크립트 수정 중...
+          </div>
+        </div>
+
+        <!-- 팩트 검증 -->
+        <div class="fact-check-box">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-teal btn-sm" id="btn-fact-check" onclick="runFactCheck()">✅ 팩트 검증</button>
+            <span style="font-size:12px;color:var(--muted);">스크립트 내 수치·고유명사·주장을 웹서치로 검증 (30초 소요)</span>
+          </div>
+          <div id="fact-check-loading" style="display:none;" class="section-loading">
+            <div class="spinner-sm"></div> 팩트 검증 중...
+          </div>
+          <div id="fact-check-results" style="display:none;margin-top:14px;">
+            <div class="section-label">팩트 검증 결과</div>
+            <div id="fact-results-list"></div>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-teal btn-sm" id="btn-fact-fix" onclick="applyFactFix()" style="display:none;">팩트 반영하여 스크립트 수정</button>
+              <div id="fact-fix-loading" class="section-loading" style="display:none;padding:0;">
+                <div class="spinner-sm"></div><span style="font-size:12px;">스크립트 수정 중...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스크립트 채팅 -->
+        <div class="script-chat-box">
+          <div class="collapsible-header" onclick="toggleScriptChat()">
+            <span style="font-size:14px;font-weight:700;">💬 스크립트 관련 질문하기</span>
+            <span class="collapsible-chevron" id="chat-chevron">▼</span>
+          </div>
+          <div id="script-chat-body" style="display:none;margin-top:12px;">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-text-input" id="chat-input"
+                placeholder="예: 이 동물의 수명은 얼마나 돼요?" />
+              <button class="btn btn-primary btn-sm" onclick="sendScriptChat()">전송</button>
+            </div>
+            <div id="chat-loading" style="display:none;" class="section-loading">
+              <div class="spinner-sm"></div> 답변 생성 중...
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="s2-error" class="error-box" style="display:none;">
+        <span id="s2-error-msg"></span>
+        <div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="retryStep2()">↺ 다시 시도</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3 ══ -->
+  <div class="step-panel" id="panel-3">
+    <div id="s3-loading" class="loading" style="display:none;">
+      <div class="spinner"></div><span>제목·썸네일·콘티 생성 중... (20~30초 소요)</span>
+    </div>
+    <div id="s3-error" class="error-box" style="display:none;">
+      <span id="s3-error-msg"></span>
+      <div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="retryStep3()">↺ 다시 시도</button></div>
+    </div>
+
+    <div id="s3-results" style="display:none;">
+
+      <!-- ① 추천 제목 -->
+      <div class="result-card">
+        <div class="rc-header">
+          <span class="rc-icon">📺</span>
+          <span class="rc-label">추천 제목</span>
+          <div class="rc-actions">
+            <button class="btn btn-ghost btn-sm" onclick="regenTitle()">🔄 재생성</button>
+            <button class="btn btn-ghost-purple btn-sm" onclick="toggleComment('title')">✏️ 코멘트</button>
+          </div>
+        </div>
+        <div id="title-loading" class="section-loading" style="display:none;">
+          <div class="spinner-sm"></div> 제목 생성 중...
+        </div>
+        <input type="text" class="edit-input" id="title-input" placeholder="제목 생성 중..." />
+        <div class="comment-section" id="cbox-title" style="display:none;">
+          <div class="comment-section-title">✏️ 제목 수정 요청</div>
+          <textarea class="textarea-comment" id="ctext-title"
+            placeholder="예: 더 자극적으로&#10;예: 숫자 포함해서"></textarea>
+          <div class="comment-apply-row">
+            <button class="btn btn-purple btn-sm" onclick="applyRegen('title')">✅ 적용</button>
+            <button class="btn btn-ghost-gray btn-sm" onclick="closeComment('title')">취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 썸네일 문구 -->
+      <div class="result-card">
+        <div class="rc-header">
+          <span class="rc-icon">🖋️</span>
+          <span class="rc-label">썸네일 문구</span>
+          <div class="rc-actions">
+            <button class="btn btn-ghost btn-sm" onclick="regenThumbText()">🔄 재생성</button>
+            <button class="btn btn-ghost-purple btn-sm" onclick="toggleComment('thumb_text')">✏️ 코멘트</button>
+          </div>
+        </div>
+        <div id="thumb-text-loading" class="section-loading" style="display:none;">
+          <div class="spinner-sm"></div> 생성 중...
+        </div>
+        <input type="text" class="edit-input-sm" id="thumb-text-input" placeholder="썸네일 문구 생성 중..." />
+        <div class="comment-section" id="cbox-thumb_text" style="display:none;">
+          <div class="comment-section-title">✏️ 썸네일 문구 수정 요청</div>
+          <textarea class="textarea-comment" id="ctext-thumb_text"
+            placeholder="예: 더 충격적으로&#10;예: 의문형으로"></textarea>
+          <div class="comment-apply-row">
+            <button class="btn btn-purple btn-sm" onclick="applyRegen('thumb_text')">✅ 적용</button>
+            <button class="btn btn-ghost-gray btn-sm" onclick="closeComment('thumb_text')">취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 썸네일 이미지 -->
+      <div class="result-card">
+        <div class="rc-header">
+          <span class="rc-icon">🖼️</span>
+          <span class="rc-label">썸네일 이미지</span>
+          <div class="rc-actions">
+            <button class="btn btn-ghost btn-sm" onclick="regenThumbPrompt()">🔄 프롬프트 재생성</button>
+            <button class="btn btn-ghost-purple btn-sm" onclick="toggleComment('thumb_prompt')">✏️ 코멘트</button>
+          </div>
+        </div>
+        <div id="thumb-prompt-loading" class="section-loading" style="display:none;">
+          <div class="spinner-sm"></div> 프롬프트 생성 중...
+        </div>
+        <div id="thumb-prompt-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:12px;color:var(--muted);font-weight:600;">이미지 프롬프트 (모하나 포함)</span>
+            <button class="copy-btn-xs" onclick="copyPromptTextarea()">📋 복사</button>
+          </div>
+          <textarea class="prompt-textarea" id="thumb-prompt-ta"></textarea>
+          <div class="img-gen-notice img-gen-notice-host">
+            📎 ChatGPT에서 생성 시 캐릭터시트를 첨부해주세요
+            <a href="https://raw.githubusercontent.com/root284/animal-youtube-app/main/assets/mohana_turnaround.png"
+              target="_blank" download="mohana_turnaround.png" class="img-notice-link">캐릭터시트 다운로드</a>
+          </div>
+        </div>
+        <div id="thumb-search-ref" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;"></div>
+        <div class="comment-section" id="cbox-thumb_prompt" style="display:none;">
+          <div class="comment-section-title">✏️ 프롬프트 수정 요청</div>
+          <textarea class="textarea-comment" id="ctext-thumb_prompt"
+            placeholder="예: 배경을 우주로&#10;예: 더 밝은 분위기로"></textarea>
+          <div class="comment-apply-row">
+            <button class="btn btn-purple btn-sm" onclick="applyRegen('thumb_prompt')">✅ 적용</button>
+            <button class="btn btn-ghost-gray btn-sm" onclick="closeComment('thumb_prompt')">취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ④ 콘티 -->
+      <div class="result-card">
+        <div class="rc-header" style="margin-bottom:12px;">
+          <span class="rc-icon">🎬</span>
+          <span class="rc-label">장면별 콘티</span>
+        </div>
+        <div class="tts-speed-bar">
+          <span class="tts-speed-label">🔊 음성 속도</span>
+          <input type="range" id="tts-speed-slider" min="0.7" max="1.5" step="0.05" value="1.1"
+            oninput="onSpeedChange(this.value)">
+          <span id="tts-speed-display" class="tts-speed-val">1.1x</span>
+        </div>
+        <div class="storyboard-list" id="storyboard-list"></div>
+      </div>
+
+      <!-- ⑤ 전체 스크립트 -->
+      <div class="result-card">
+        <div class="collapsible-header" onclick="toggleScriptPanel()">
+          <span class="rc-icon">📜</span>
+          <span class="rc-label">전체 스크립트</span>
+          <span class="collapsible-chevron" id="script-chevron">▼</span>
+        </div>
+        <div class="collapsible-body" id="script-body" style="display:none;">
+          <div class="header-row" style="margin-bottom:10px;">
+            <span style="font-size:12px;color:var(--muted);">직접 수정 가능</span>
+            <div style="display:flex;gap:6px;">
+              <span class="char-counter" id="char-counter-3">0자</span>
+              <button class="copy-btn" onclick="copyText('script-ta-3','스크립트')">📋 복사</button>
+            </div>
+          </div>
+          <textarea class="script-textarea" id="script-ta-3" oninput="updateCharCount3()" style="min-height:300px;"></textarea>
+        </div>
+      </div>
+
+      <div class="action-row" style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="saveToArchive()">💾 저장</button>
+        <button class="btn btn-teal" onclick="confirmStartOver()">✅ 새 콘텐츠 만들기</button>
+        <button class="btn btn-purple btn-sm" onclick="generatePDF()">📄 PDF로 저장</button>
+        <button class="btn btn-ghost-gray btn-sm" onclick="goStep(2)">← 스크립트 수정</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ARCHIVE PANEL ══ -->
+  <div id="panel-archive" style="display:none;">
+    <div class="card">
+      <div class="card-title">📦 아카이브</div>
+      <p class="card-sub">저장된 콘텐츠 목록입니다. 항목을 선택하면 새 탭에서 열립니다. 최대 50개 저장됩니다.</p>
+      <div id="archive-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;">
+        아직 저장된 항목이 없습니다.<br>
+        <span style="font-size:12px;margin-top:8px;display:block;">콘텐츠 제작 완료 후 "💾 저장" 버튼을 누르면 여기에 저장됩니다.</span>
+      </div>
+      <div class="archive-list" id="archive-list"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Mode detection ─────────────────────────────────────────────────────────
+const APP_MODE = new URLSearchParams(window.location.search).get('mode') || 'main';
+// 'main': 아이템 추천 탭, 'work': 스크립트+콘티 탭, 'archive': 아카이브 목록
+
+// ── State ──────────────────────────────────────────────────────────────────
+const S = {
+  step:1, item:'', itemDetail:'', script:'',
+  itemLink:'',
+  title:'', thumbnailText:'',
+  thumbnailType:'illustration', thumbnailPrompt:'', thumbnailSearchQuery:'',
+  storyboard:[],
+  sceneAudio:{}, chatHistory:[],
+  sceneCharVoice:{}, sceneCharAudio:{},
+  sceneInterviewSegments:{},
+  ttsSpeed:1.1,
+  pickedItemIdx:undefined, searchItems:[],
+};
+const STORAGE_KEY = 'animal_yt_v8';
+const ARCHIVE_KEY = 'animal_yt_archive_v1';
+const MOHANA_VOICE_ID = '2tAT7azT5P0LHAQeoJ0m';
+const ANIMAL_VOICES = [
+  {label:'남자', voice_id:'LS3HmRGCXV8wxCAhUbTt'},
+  {label:'여자', voice_id:'vGQNBgLaiM3EdZtxIiuY'},
+  {label:'아이',  voice_id:'qBDvhofpxp92JgXJxDjB'},
+];
+let openCommentId = null;
+let lastFactResults = [];
+
+// ── Persistence ───────────────────────────────────────────────────────────
+function saveState() {
+  if (APP_MODE !== 'main') return; // work/archive 탭은 로컬 저장 안 함
+  try {
+    const toSave = Object.assign({}, S);
+    delete toSave.chatHistory;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch {}
+}
+function restoreState() {
+  if (APP_MODE !== 'main') return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved || !saved.step) return;
+    Object.assign(S, saved);
+    if (!S.sceneAudio) S.sceneAudio = {};
+    if (!S.searchItems) S.searchItems = [];
+    if (!S.sceneCharVoice) S.sceneCharVoice = {};
+    if (!S.sceneCharAudio) S.sceneCharAudio = {};
+    if (!S.sceneInterviewSegments) S.sceneInterviewSegments = {};
+    if (!S.ttsSpeed) S.ttsSpeed = 1.1;
+    if (!S.itemLink) S.itemLink = '';
+
+    // 1단계: 검색된 아이템 복원
+    if (S.searchItems.length) {
+      renderItems(S.searchItems);
+      document.getElementById('s1-results').style.display = 'block';
+      if (S.pickedItemIdx !== undefined) {
+        const card = document.getElementById('ic' + S.pickedItemIdx);
+        if (card) {
+          card.classList.add('selected');
+          document.getElementById('item-action-row').style.display = 'flex';
+        }
+      }
+    }
+
+    if (S.item) document.getElementById('s2-item-text').textContent = S.item;
+    if (S.step >= 2 && S.script) {
+      document.getElementById('script-ta').value = S.script;
+      updateCharCount();
+      document.getElementById('s2-results').style.display = 'block';
+    }
+    if (S.step >= 3 && S.title) {
+      renderStep3Results();
+      document.getElementById('s3-results').style.display = 'block';
+    }
+    goStep(S.step);
+    showToast(`${S.step}단계 작업을 불러왔습니다.`);
+  } catch {}
+}
+
+// ── Step navigation ───────────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  const panelEl = document.getElementById('panel-' + n);
+  if (panelEl) panelEl.classList.add('active');
+  S.step = n;
+  for (let i = 1; i <= 3; i++) {
+    const b = document.getElementById('sb'+i), nm = document.getElementById('sn'+i);
+    if (!b || !nm) continue;
+    b.classList.remove('active','done'); nm.classList.remove('active','done');
+    // work 모드에서는 step 1이 항상 "완료" 상태
+    const alwaysDone = (APP_MODE === 'work' && i === 1);
+    if (alwaysDone || i < n)  { b.classList.add('done');  b.textContent='✓'; nm.classList.add('done'); }
+    else if (i === n) { b.classList.add('active'); b.textContent=i; nm.classList.add('active'); }
+    else { b.textContent=i; }
+    if (i < 3) { const l=document.getElementById('sl'+i); i<n?l.classList.add('done'):l.classList.remove('done'); }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function showToast(msg, dur=2800) {
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur);
+}
+function esc(s) {
+  if (!s) return '';
+  const d=document.createElement('div'); d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+function copyText(id, label) {
+  const el=document.getElementById(id);
+  const text=el.tagName==='TEXTAREA'||el.tagName==='INPUT'?el.value:el.textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast((label||'텍스트')+' 복사됨!'));
+}
+function copyPromptTextarea() { copyText('thumb-prompt-ta','프롬프트'); }
+function showError(id,msg) {
+  const el=document.getElementById(id);
+  const msgEl=document.getElementById(id+'-msg');
+  if(msgEl) msgEl.textContent='⚠️ '+msg; else el.textContent='⚠️ '+msg;
+  el.style.display='block';
+}
+function hideError(id) { document.getElementById(id).style.display='none'; }
+function updateCharCount() {
+  const len=document.getElementById('script-ta').value.length;
+  const el=document.getElementById('char-counter'); el.textContent=len+'자';
+  el.className='char-counter '+(len>=700&&len<=1000?'ok':len>1000?'over':'');
+}
+function updateCharCount3() {
+  const len=document.getElementById('script-ta-3').value.length;
+  const el=document.getElementById('char-counter-3'); el.textContent=len+'자';
+  el.className='char-counter '+(len>=700&&len<=1000?'ok':len>1000?'over':'');
+}
+function toggleComment(id) {
+  if (openCommentId && openCommentId !== id) {
+    const prev=document.getElementById('cbox-'+openCommentId);
+    if (prev) prev.style.display='none';
+  }
+  const box=document.getElementById('cbox-'+id);
+  if (!box) return;
+  const showing=box.style.display!=='none';
+  box.style.display=showing?'none':'block';
+  openCommentId=showing?null:id;
+  if (!showing) { const ta=box.querySelector('textarea'); if(ta){ta.value='';ta.focus();} }
+}
+function closeComment(id) {
+  const box=document.getElementById('cbox-'+id);
+  if(box) box.style.display='none';
+  if(openCommentId===id) openCommentId=null;
+}
+function sectionLoading(id, show) {
+  const el=document.getElementById(id+'-loading');
+  if(el) el.style.display=show?'flex':'none';
+}
+
+// ── 처음부터 다시 시작 ──────────────────────────────────────────────────────
+function confirmStartOver() {
+  if (S.step > 1 || S.item) {
+    if (!confirm('작업 중인 내용이 모두 초기화됩니다. 처음부터 시작할까요?')) return;
+  }
+  startOver();
+}
+function startOver() {
+  localStorage.removeItem(STORAGE_KEY);
+  Object.assign(S, {
+    step:1, item:'', itemDetail:'', script:'',
+    itemLink:'',
+    title:'', thumbnailText:'',
+    thumbnailType:'illustration', thumbnailPrompt:'', thumbnailSearchQuery:'',
+    storyboard:[],
+    sceneAudio:{}, chatHistory:[],
+    sceneCharVoice:{}, sceneCharAudio:{},
+    sceneInterviewSegments:{},
+    ttsSpeed:1.1,
+    pickedItemIdx:undefined, searchItems:[],
+  });
+  footageFiles=[];
+  document.getElementById('manual-item').value='';
+  document.getElementById('s1-results').style.display='none';
+  document.getElementById('s2-results').style.display='none';
+  document.getElementById('s3-results').style.display='none';
+  document.getElementById('fact-check-results').style.display='none';
+  document.getElementById('chat-messages').innerHTML='';
+  document.getElementById('item-action-row').style.display='none';
+  goStep(1);
+}
+
+// ── STEP 1 ────────────────────────────────────────────────────────────────
+async function searchItems() {
+  const btn=document.getElementById('btn-search'); btn.disabled=true;
+  const direction=(document.getElementById('search-direction')?.value||'').trim();
+  document.getElementById('s1-results').style.display='none';
+  document.getElementById('item-action-row').style.display='none';
+  document.getElementById('s1-loading').style.display='flex';
+  hideError('s1-error');
+  try {
+    // 아카이브에 저장된 아이템은 제외
+    const archive=getArchive();
+    const excludeItems=archive.map(a=>a.item).filter(Boolean).slice(0,30);
+    const bodyObj={};
+    if(direction) bodyObj.direction=direction;
+    if(excludeItems.length) bodyObj.exclude_items=excludeItems;
+    const res=await fetch('/api/search-items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(bodyObj)});
+    const data=await res.json();
+    if(data.success&&data.items&&data.items.length) {
+      S.searchItems=data.items; S.pickedItemIdx=undefined;
+      renderItems(data.items);
+      document.getElementById('s1-results').style.display='block';
+      saveState();
+    } else showError('s1-error',data.error||'검색 실패');
+  } catch(e) { showError('s1-error','서버 오류: '+e.message); }
+  finally { document.getElementById('s1-loading').style.display='none'; btn.disabled=false; }
+}
+
+function renderItems(items) {
+  document.getElementById('items-list').innerHTML=items.map((item,i)=>`
+    <div class="item-card" id="ic${i}" onclick="pickItem(${i})">
+      <div class="item-num">${i+1}</div>
+      <div class="item-card-body">
+        <div class="item-title">${esc(item.title)}</div>
+        <div class="item-desc">${esc(item.description)}</div>
+        <div class="item-reason">💡 ${esc(item.reason)}</div>
+        ${item.link?`<div><a class="item-link" href="${esc(item.link)}" target="_blank" onclick="event.stopPropagation();">🔗 관련 기사/영상</a></div>`:''}
+      </div>
+    </div>`).join('');
+}
+function pickItem(i) {
+  document.querySelectorAll('.item-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('ic'+i).classList.add('selected');
+  S.pickedItemIdx=i;
+  document.getElementById('item-action-row').style.display='flex';
+  saveState();
+}
+function selectItemAuto() {
+  if (S.pickedItemIdx===undefined){showToast('아이템을 선택해주세요!');return;}
+  const item=S.searchItems[S.pickedItemIdx];
+  _openWorkTab(item.title+': '+item.description, item.link||'', false);
+}
+function selectItemDirect() {
+  if (S.pickedItemIdx===undefined){showToast('아이템을 선택해주세요!');return;}
+  const item=S.searchItems[S.pickedItemIdx];
+  _openWorkTab(item.title+': '+item.description, item.link||'', true);
+}
+function selectManualAuto() {
+  const v=document.getElementById('manual-item').value.trim();
+  if(!v){showToast('아이템을 입력해주세요!');return;}
+  _openWorkTab(v,'',false);
+}
+function selectManualDirect() {
+  const v=document.getElementById('manual-item').value.trim();
+  if(!v){showToast('아이템을 입력해주세요!');return;}
+  _openWorkTab(v,'',true);
+}
+
+function _openWorkTab(itemText, itemLink, directInput) {
+  localStorage.setItem('pending_work_item', JSON.stringify({
+    item: itemText, itemLink: itemLink||'', directInput: !!directInput, fromArchive: false
+  }));
+  const w=window.open('/?mode=work','_blank');
+  if(!w) showToast('팝업이 차단되었습니다. 브라우저 팝업을 허용 후 다시 시도해주세요.', 4000);
+}
+
+// ── STEP 2 ────────────────────────────────────────────────────────────────
+function setPhase(phase) {
+  ['search','write'].forEach(p=>{
+    const el=document.getElementById('phase-'+p);
+    el.classList.remove('active','done');
+    if(p===phase) el.classList.add('active');
+    else if(phase==='write'&&p==='search') el.classList.add('done');
+  });
+}
+
+async function loadStep2(skipSearch) {
+  goStep(2);
+  document.getElementById('s2-item-text').textContent=S.item;
+  document.getElementById('s2-results').style.display='none';
+  document.getElementById('s2-loading').style.display='flex';
+  hideError('s2-error');
+  document.getElementById('fact-check-results').style.display='none';
+  document.getElementById('chat-messages').innerHTML='';
+  S.chatHistory=[];
+  await fetchScript(skipSearch);
+}
+
+// Direct input mode: go to Step 2 with blank script
+function loadStep2Direct() {
+  goStep(2);
+  document.getElementById('s2-item-text').textContent=S.item;
+  document.getElementById('s2-loading').style.display='none';
+  document.getElementById('script-ta').value='';
+  updateCharCount();
+  document.getElementById('s2-results').style.display='block';
+  document.getElementById('fact-check-results').style.display='none';
+  document.getElementById('chat-messages').innerHTML='';
+  S.script=''; S.itemDetail=''; S.chatHistory=[];
+  if(!S.itemLink) S.itemLink='';
+  saveState();
+}
+
+async function fetchScript(skipSearch) {
+  try {
+    if (skipSearch && S.itemDetail) {
+      setPhase('write');
+    } else {
+      setPhase('search'); S.itemDetail='';
+      try {
+        const dr=await fetch('/api/get-item-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:S.item})});
+        const dd=await dr.json();
+        if(dd.success) S.itemDetail=dd.detail||'';
+      } catch {}
+      setPhase('write');
+    }
+    const res=await fetch('/api/generate-script',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({item:S.item,item_detail:S.itemDetail})});
+    const data=await res.json();
+    if(data.success) {
+      S.script=data.script;
+      document.getElementById('script-ta').value=data.script;
+      updateCharCount();
+      document.getElementById('s2-results').style.display='block';
+      saveState();
+    } else showError('s2-error',data.error||'생성 실패');
+  } catch(e) { showError('s2-error','서버 오류: '+e.message); }
+  finally { document.getElementById('s2-loading').style.display='none'; }
+}
+
+function regenScript() {
+  document.getElementById('s2-results').style.display='none';
+  document.getElementById('s2-loading').style.display='flex';
+  closeComment('script');
+  fetchScript(!!S.itemDetail); // skip re-search if detail already cached
+}
+
+async function applyScriptComment() {
+  const comment=document.getElementById('ctext-script').value.trim();
+  if(!comment){showToast('수정 내용을 입력해주세요!');return;}
+  const loading=document.getElementById('script-comment-loading');
+  loading.style.display='flex';
+  document.querySelector('#cbox-script .comment-apply-row').style.display='none';
+  try {
+    const res=await fetch('/api/revise-script',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({script:document.getElementById('script-ta').value,comment})});
+    const data=await res.json();
+    if(data.success) {
+      S.script=data.script;
+      document.getElementById('script-ta').value=data.script;
+      updateCharCount();
+      closeComment('script');
+      saveState();
+      showToast('스크립트 수정 완료!');
+    } else showToast('수정 실패: '+data.error);
+  } catch(e){showToast('오류: '+e.message);}
+  finally {
+    loading.style.display='none';
+    document.querySelector('#cbox-script .comment-apply-row').style.display='flex';
+  }
+}
+
+// ── 팩트 검증 ──────────────────────────────────────────────────────────────
+async function runFactCheck() {
+  const script=document.getElementById('script-ta').value.trim();
+  if(!script){showToast('스크립트가 없습니다!');return;}
+  const btn=document.getElementById('btn-fact-check'); btn.disabled=true;
+  document.getElementById('fact-check-loading').style.display='flex';
+  document.getElementById('fact-check-results').style.display='none';
+  try {
+    const res=await fetch('/api/fact-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script})});
+    const data=await res.json();
+    if(data.success&&data.results) {
+      lastFactResults=data.results;
+      document.getElementById('fact-results-list').innerHTML=data.results.map(r=>`
+        <div class="fact-item">
+          <span class="fact-status">${esc(r.status||'⚠️')}</span>
+          <div>
+            <div class="fact-claim">${esc(r.claim||'')}</div>
+            <div class="fact-detail">${esc(r.detail||'')}</div>
+          </div>
+        </div>`).join('');
+      document.getElementById('fact-check-results').style.display='block';
+      const hasIssues=data.results.some(r=>!(r.status||'').includes('✅'));
+      document.getElementById('btn-fact-fix').style.display=hasIssues?'inline-flex':'none';
+    } else showToast('팩트 검증 실패: '+(data.error||'파싱 오류'));
+  } catch(e){showToast('오류: '+e.message);}
+  finally { document.getElementById('fact-check-loading').style.display='none'; btn.disabled=false; }
+}
+
+// ── 스크립트 채팅 ───────────────────────────────────────────────────────────
+function toggleScriptChat() {
+  const body=document.getElementById('script-chat-body');
+  const chevron=document.getElementById('chat-chevron');
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  chevron.classList.toggle('open',!isOpen);
+}
+
+// IME 한글 입력 버그 수정: isComposing + keyCode 229 체크
+document.addEventListener('DOMContentLoaded', () => {
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.isComposing || e.keyCode === 229) return;
+        e.preventDefault();
+        sendScriptChat();
+      }
+    });
+  }
+});
+
+async function sendScriptChat() {
+  const input=document.getElementById('chat-input');
+  const question=input.value.trim();
+  if(!question){showToast('질문을 입력해주세요!');return;}
+  const script=document.getElementById('script-ta').value;
+  appendChatMsg('user', question);
+  input.value='';
+  document.getElementById('chat-loading').style.display='flex';
+  try {
+    const res=await fetch('/api/script-chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question,script})});
+    const data=await res.json();
+    appendChatMsg('ai', data.success?data.answer:'오류: '+(data.error||'응답 실패'));
+  } catch(e){appendChatMsg('ai','오류: '+e.message);}
+  finally { document.getElementById('chat-loading').style.display='none'; }
+}
+function appendChatMsg(role, text) {
+  const box=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='chat-msg '+(role==='user'?'chat-msg-user':'chat-msg-ai');
+  div.innerHTML=`<div class="chat-msg-label">${role==='user'?'나':'모하나 AI'}</div>${esc(text)}`;
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+}
+
+function proceedToStep3() {
+  S.script=document.getElementById('script-ta').value;
+  saveState();
+  loadStep3();
+}
+
+// ── STEP 3 ────────────────────────────────────────────────────────────────
+async function loadStep3() {
+  goStep(3);
+  document.getElementById('s3-results').style.display='none';
+  document.getElementById('s3-loading').style.display='flex';
+  hideError('s3-error');
+  await fetchStep3();
+}
+
+async function fetchStep3() {
+  try {
+    const res=await fetch('/api/generate-step3',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({item:S.item,script:S.script})});
+    const data=await res.json();
+    if(data.success) {
+      S.title=data.title; S.thumbnailText=data.thumbnail_text;
+      S.thumbnailType=data.thumbnail_type||'illustration';
+      S.thumbnailPrompt=data.thumbnail_prompt||'';
+      S.thumbnailSearchQuery=data.thumbnail_search_query||'';
+      S.storyboard=data.storyboard||[];
+      S.sceneAudio={}; S.sceneInterviewSegments={};
+      renderStep3Results();
+      document.getElementById('s3-results').style.display='block';
+      saveState();
+    } else showError('s3-error',data.error||'생성 실패');
+  } catch(e){showError('s3-error','서버 오류: '+e.message);}
+  finally { document.getElementById('s3-loading').style.display='none'; }
+}
+
+function renderStep3Results() {
+  document.getElementById('title-input').value=S.title;
+  document.getElementById('thumb-text-input').value=S.thumbnailText;
+  document.getElementById('thumb-prompt-ta').value=S.thumbnailPrompt||'';
+  const spd = S.ttsSpeed || 1.1;
+  const sliderEl = document.getElementById('tts-speed-slider');
+  if (sliderEl) sliderEl.value = spd;
+  const displayEl = document.getElementById('tts-speed-display');
+  if (displayEl) displayEl.textContent = Number(spd.toFixed(2)) + 'x';
+  // Show search ref if available
+  const refEl=document.getElementById('thumb-search-ref');
+  if(S.thumbnailSearchQuery) {
+    refEl.textContent='📷 참고 검색어: '+S.thumbnailSearchQuery;
+    refEl.style.display='block';
+  } else {
+    refEl.style.display='none';
+  }
+  renderStoryboard(S.storyboard);
+  const ta3=document.getElementById('script-ta-3');
+  if(ta3){ ta3.value=S.script; updateCharCount3(); }
+}
+
+// ── TTS ───────────────────────────────────────────────────────────────────
+function onSpeedChange(val) {
+  S.ttsSpeed = parseFloat(val);
+  document.getElementById('tts-speed-display').textContent = Number(parseFloat(val).toFixed(2)) + 'x';
+  saveState();
+}
+
+function hasInterviewTags(text) {
+  return /\[([^\]]+)\]/.test(text||'');
+}
+
+function _setAudioResult(idx, data) {
+  S.sceneAudio[idx]={url:data.url,filename:data.filename};
+  const aEl=document.getElementById('audio-player-'+idx);
+  const dlEl=document.getElementById('audio-dl-'+idx);
+  const wEl=document.getElementById('scene-audio-wrap-'+idx);
+  if(aEl){aEl.src=data.url;aEl.load();}
+  if(dlEl){dlEl.href=data.url;dlEl.download=data.filename;}
+  if(wEl) wEl.style.display='block';
+  saveState();
+}
+
+function renderInterviewSegmentsHTML(segments) {
+  if(!segments||!segments.length) return '';
+  return segments.map(seg=>{
+    const isMohana=seg.speaker_type==='mohana';
+    const color=isMohana?'var(--teal)':'var(--orange)';
+    const bg=isMohana?'var(--teal-light)':'var(--orange-light)';
+    return `<div style="padding:10px 12px;background:${bg};border-radius:8px;border-left:3px solid ${color};margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:800;color:${color};white-space:nowrap;">[${esc(seg.speaker_label)}]</span>
+        <span style="font-size:12px;color:var(--muted);flex:1;line-height:1.4;">${esc(seg.text)}</span>
+        <a href="${esc(seg.url)}" download="${esc(seg.filename)}" class="btn btn-ghost-gray btn-xs" style="white-space:nowrap;">⬇ 다운로드</a>
+      </div>
+      <audio controls style="width:100%;height:32px;" src="${esc(seg.url)}"></audio>
+    </div>`;
+  }).join('');
+}
+
+async function generateSceneTTS(idx) {
+  const scene=S.storyboard[idx];
+  const text=((scene&&(scene.script_text||scene.caption))||'').trim();
+  if(!text){showToast('이 장면에 스크립트 텍스트가 없습니다.');return;}
+
+  const loadingEl=document.getElementById('scene-tts-loading-'+idx);
+  if(loadingEl) loadingEl.style.display='flex';
+
+  try {
+    if(hasInterviewTags(text)) {
+      // 인터뷰 컷: 태그별 각각 별도 파일 생성
+      const charVoice=S.sceneCharVoice[idx];
+      const charVoiceId=charVoice?charVoice.voice_id:'';
+      if(!charVoiceId) {
+        if(loadingEl) loadingEl.style.display='none';
+        showToast('인터뷰 장면입니다. 동물 목소리 선택 버튼을 눌러 목소리를 선택해주세요!', 3500);
+        toggleCharVoice(idx);
+        return;
+      }
+      const res=await fetch('/api/generate-interview-tts',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text,char_voice_id:charVoiceId,scene_idx:idx,speed:S.ttsSpeed||1.1})});
+      const data=await res.json();
+      if(data.success&&data.segments){
+        if(!S.sceneInterviewSegments) S.sceneInterviewSegments={};
+        S.sceneInterviewSegments[idx]=data.segments;
+        const wEl=document.getElementById('scene-interview-wrap-'+idx);
+        if(wEl){wEl.innerHTML=renderInterviewSegmentsHTML(data.segments);wEl.style.display='block';}
+        saveState();
+        showToast(`인터뷰 음성 생성 완료! (${data.segments.length}개 파일)`);
+      } else showToast('TTS 오류: '+(data.error||'생성 실패'));
+    } else {
+      // 일반 컷: 모하나 단독
+      const res=await fetch('/api/generate-tts',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text,voice_id:MOHANA_VOICE_ID,scene_idx:idx,speed:S.ttsSpeed||1.1})});
+      const data=await res.json();
+      if(data.success){ _setAudioResult(idx,data); showToast('음성 생성 완료!'); }
+      else showToast('TTS 오류: '+(data.error||'생성 실패'));
+    }
+  } catch(e){showToast('오류: '+e.message);}
+  finally { if(loadingEl) loadingEl.style.display='none'; }
+}
+
+function toggleCharVoice(idx) {
+  const section=document.getElementById('char-voice-section-'+idx);
+  if(!section) return;
+  if(section.style.display==='none'||section.style.display==='') {
+    section.style.display='block';
+    if(!S.sceneCharVoice[idx]) S.sceneCharVoice[idx]={text:'',voice_id:ANIMAL_VOICES[0].voice_id};
+    saveState();
+  } else {
+    section.style.display='none';
+  }
+}
+
+function removeCharVoice(idx) {
+  delete S.sceneCharVoice[idx];
+  delete S.sceneCharAudio[idx];
+  const section=document.getElementById('char-voice-section-'+idx);
+  if(section) section.style.display='none';
+  saveState();
+}
+
+async function generateCharTTS(idx) {
+  const textEl=document.getElementById('char-text-'+idx);
+  const voiceEl=document.getElementById('char-voice-'+idx);
+  const text=textEl?textEl.value.trim():'';
+  const voiceId=voiceEl?voiceEl.value:'';
+  if(!text){showToast('캐릭터 대사를 입력해주세요!');return;}
+  if(!voiceId){showToast('목소리를 선택해주세요!');return;}
+  S.sceneCharVoice[idx]={text,voice_id:voiceId};
+  const loadingEl=document.getElementById('char-tts-loading-'+idx);
+  if(loadingEl) loadingEl.style.display='flex';
+  try {
+    const res=await fetch('/api/generate-tts',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,voice_id:voiceId,scene_idx:idx,speed:S.ttsSpeed||1.1})});
+    const data=await res.json();
+    if(data.success){
+      S.sceneCharAudio[idx]={url:data.url,filename:data.filename};
+      const aEl=document.getElementById('char-audio-player-'+idx);
+      const dlEl=document.getElementById('char-audio-dl-'+idx);
+      const wEl=document.getElementById('char-audio-wrap-'+idx);
+      if(aEl){aEl.src=data.url;aEl.load();}
+      if(dlEl){dlEl.href=data.url;dlEl.download=data.filename;}
+      if(wEl) wEl.style.display='block';
+      saveState();
+      showToast('캐릭터 음성 생성 완료!');
+    } else showToast('TTS 오류: '+(data.error||'생성 실패'));
+  } catch(e){showToast('오류: '+e.message);}
+  finally { if(loadingEl) loadingEl.style.display='none'; }
+}
+
+
+// ── Storyboard rendering ───────────────────────────────────────────────────
+function buildImageSection(s, i) {
+  const st=s.type==='host'?'host':'illustration';
+  const promptId=s.type==='host'?`cprompt-${i}`:`sprompt-${i}`;
+  const promptVal=esc(s.type==='host'?(s.character_prompt||''):(s.image_prompt||''));
+  const promptLabel=s.type==='host'?'캐릭터 프롬프트 (모하나 · 1280x720)':'이미지 프롬프트 (1280x720)';
+  const notice=s.type==='host'
+    ?`<div class="img-gen-notice img-gen-notice-host">
+        📎 ChatGPT에서 생성 시 캐릭터시트를 첨부해주세요
+        <a href="https://raw.githubusercontent.com/root284/animal-youtube-app/main/assets/mohana_turnaround.png"
+          target="_blank" download="mohana_turnaround.png" class="img-notice-link">캐릭터시트 다운로드</a>
+      </div>`
+    :'';
+  return `
+    <div class="scene-img-label">${promptLabel}
+      <button class="copy-btn-xs" onclick="copyScenePrompt(${i},'${st}')">📋 복사</button>
+    </div>
+    <textarea class="prompt-textarea" id="${promptId}" rows="3">${promptVal}</textarea>
+    ${notice}`;
+}
+
+function buildRealFootageSection(s, i) {
+  const query=s.footage_query||'';
+  const googleUrl='https://www.google.com/search?q='+encodeURIComponent(query);
+  return `<div class="img-gen-notice img-gen-notice-footage" style="margin-top:0;margin-bottom:10px;">
+    📎 실제 영상/사진을 첨부하거나 아래 검색어로 찾아주세요
+  </div>
+  <div class="real-footage-notice" style="padding:10px 14px;">
+    <div class="real-footage-query">🔍 검색어: ${esc(query||'검색어 확인 필요')}
+      <a href="${googleUrl}" target="_blank" class="copy-btn-xs" style="text-decoration:none;">구글 검색</a>
+    </div>
+  </div>`;
+}
+
+function buildSceneCard(s, i) {
+  const scriptRow=s.script_text
+    ?`<div class="scene-script-text">💬 ${esc(s.script_text)}</div>`:'';
+
+  let extraContent='';
+  if(s.type==='illustration') {
+    extraContent=buildImageSection(s,i);
+  } else if(s.type==='host') {
+    extraContent=buildImageSection(s,i);
+  } else if(s.type==='real_footage') {
+    extraContent=buildRealFootageSection(s,i);
+  }
+
+  const audioData=S.sceneAudio[i];
+  const charVoice=S.sceneCharVoice[i];
+  const charAudio=S.sceneCharAudio[i];
+  const interviewSegs=(S.sceneInterviewSegments&&S.sceneInterviewSegments[i])||null;
+  const isInterview=hasInterviewTags(s.script_text);
+  const charVoiceOpts=ANIMAL_VOICES.map(v=>
+    `<option value="${v.voice_id}"${charVoice&&charVoice.voice_id===v.voice_id?' selected':''}>${v.label}</option>`).join('');
+
+  // 인터뷰 컷: 목소리 선택만, 일반 컷: 대사 입력 + 목소리 선택
+  const charSection=isInterview
+    ?`<div id="char-voice-section-${i}" class="char-voice-box" style="display:${charVoice?'block':'none'};">
+        <div class="char-voice-box-header">
+          <span class="char-voice-label">🎭 인터뷰 캐릭터 목소리</span>
+          <button class="btn btn-ghost-gray btn-xs" onclick="removeCharVoice(${i})">✕ 제거</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">[모하나]/[동물] 태그 대사를 자동 분리해서 각 목소리로 합성합니다.</div>
+        <div class="char-voice-row">
+          <select id="char-voice-${i}" class="scene-voice-select" style="width:auto;flex:1;">${charVoiceOpts}</select>
+          <div id="char-tts-loading-${i}" class="section-loading" style="display:none;padding:0;">
+            <div class="spinner-sm"></div><span style="font-size:12px;">합성 중...</span>
+          </div>
+        </div>
+      </div>`
+    :`<div id="char-voice-section-${i}" class="char-voice-box" style="display:${charVoice?'block':'none'};">
+        <div class="char-voice-box-header">
+          <span class="char-voice-label">캐릭터 음성</span>
+          <button class="btn btn-ghost-gray btn-xs" onclick="removeCharVoice(${i})">✕ 제거</button>
+        </div>
+        <textarea id="char-text-${i}" class="textarea-manual" rows="2"
+          placeholder="캐릭터 대사를 입력하세요..."
+          style="min-height:60px;margin-bottom:8px;">${esc(charVoice&&charVoice.text?charVoice.text:'')}</textarea>
+        <div class="char-voice-row">
+          <select id="char-voice-${i}" class="scene-voice-select" style="width:auto;flex:1;">${charVoiceOpts}</select>
+          <button class="btn btn-primary btn-sm" onclick="generateCharTTS(${i})">캐릭터 음성 생성</button>
+          <div id="char-tts-loading-${i}" class="section-loading" style="display:none;padding:0;">
+            <div class="spinner-sm"></div><span style="font-size:12px;">생성 중...</span>
+          </div>
+        </div>
+        <div id="char-audio-wrap-${i}" style="display:${charAudio?'block':'none'};margin-top:8px;">
+          <audio id="char-audio-player-${i}" controls style="width:100%;border-radius:8px;"
+            ${charAudio?`src="${esc(charAudio.url)}"`:''} ></audio>
+          <a id="char-audio-dl-${i}" href="${charAudio?esc(charAudio.url):'#'}"
+            download="${charAudio?esc(charAudio.filename):''}"
+            class="btn btn-ghost-gray btn-xs" style="margin-top:4px;">다운로드</a>
+        </div>
+      </div>`;
+
+  const mainBtnLabel=isInterview?'🎭 인터뷰 음성 생성':'🎙️ 모하나 음성 생성';
+  const charBtnLabel=isInterview?'+ 동물 목소리 선택':'+ 캐릭터 음성 추가';
+  const mainHint=isInterview
+    ?'<span style="font-size:12px;color:var(--muted);">🎭 인터뷰 컷 — 대사별 별도 파일로 생성됩니다. 먼저 동물 목소리를 선택하세요.</span>'
+    :'<span style="font-size:12px;color:var(--muted);">🎙️ 모하나 목소리로 자동 생성</span>';
+
+  // 인터뷰 컷 재생 영역: 세그먼트 목록
+  const interviewWrap=`<div id="scene-interview-wrap-${i}" style="display:${interviewSegs?'block':'none'};margin-top:8px;">${interviewSegs?renderInterviewSegmentsHTML(interviewSegs):''}</div>`;
+  // 일반 컷 재생 영역: 단일 오디오
+  const audioWrap=`<div id="scene-audio-wrap-${i}" style="display:${audioData?'block':'none'};margin-top:4px;">
+    <audio id="audio-player-${i}" controls style="width:100%;border-radius:8px;"
+      ${audioData?`src="${esc(audioData.url)}"`:''} ></audio>
+    <a id="audio-dl-${i}" href="${audioData?esc(audioData.url):'#'}"
+      download="${audioData?esc(audioData.filename):''}"
+      class="btn btn-ghost-gray btn-xs" style="margin-top:4px;">다운로드</a>
+  </div>`;
+
+  const ttsSection=`
+    <div class="scene-tts-section">
+      ${mainHint}
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn btn-teal btn-sm" onclick="generateSceneTTS(${i})">${mainBtnLabel}</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCharVoice(${i})">${charBtnLabel}</button>
+        <div id="scene-tts-loading-${i}" class="section-loading" style="display:none;padding:0;">
+          <div class="spinner-sm"></div><span style="font-size:12px;">생성 중...</span>
+        </div>
+      </div>
+      ${isInterview?interviewWrap:audioWrap}
+      ${charSection}
+    </div>`;
+
+  return `<div class="scene-card" id="scene-card-${i}">
+    <div class="scene-header">
+      <span class="scene-num">${i+1}</span>
+      <span class="scene-name">${esc(s.scene)}</span>
+      <span class="scene-dur">${esc(s.duration||'')}</span>
+      <div class="scene-actions">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.4);"
+          onclick="regenScene(${i})">재생성</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.4);"
+          onclick="toggleComment('scene_${i}')">코멘트</button>
+      </div>
+    </div>
+    <div class="scene-body">
+      <div class="scene-row"><span class="scene-key">📸 화면</span>${esc(s.visual||'')}</div>
+      <div class="scene-row"><span class="scene-key">🎵 음향</span>${esc(s.audio||'')}</div>
+      <div class="scene-row"><span class="scene-key">📝 자막</span>${esc(s.caption||'')}</div>
+      ${scriptRow}
+      ${extraContent?`<div class="scene-extra">${extraContent}</div>`:''}
+      ${ttsSection}
+      <div class="comment-section" id="cbox-scene_${i}" style="display:none;margin-top:12px;">
+        <div class="comment-section-title">✏️ 장면 ${i+1} 수정 요청</div>
+        <textarea class="textarea-comment" id="ctext-scene_${i}"
+          placeholder="예: 더 역동적인 화면으로&#10;예: 자막을 바꿔줘"></textarea>
+        <div class="comment-apply-row">
+          <button class="btn btn-purple btn-xs" onclick="applySceneRegen(${i})">✅ 적용</button>
+          <button class="btn btn-ghost-gray btn-xs" onclick="closeComment('scene_${i}')">취소</button>
+        </div>
+        <div id="scene-loading-${i}" class="section-loading" style="display:none;">
+          <div class="spinner-sm"></div> 장면 재생성 중...
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderStoryboard(scenes) {
+  document.getElementById('storyboard-list').innerHTML=scenes.map((s,i)=>buildSceneCard(s,i)).join('');
+}
+
+// ── Copy helpers ──────────────────────────────────────────────────────────
+function copyScenePrompt(i, st) {
+  const id=st==='host'?`cprompt-${i}`:`sprompt-${i}`;
+  const el=document.getElementById(id);
+  if(el) navigator.clipboard.writeText(el.value||el.textContent).then(()=>showToast('프롬프트 복사됨!'));
+}
+function copySceneFootage(i) {
+  const s=S.storyboard[i];
+  if(s) navigator.clipboard.writeText(s.footage_query||'').then(()=>showToast('검색어 복사됨!'));
+}
+
+function toggleScriptPanel() {
+  const body=document.getElementById('script-body');
+  const chevron=document.getElementById('script-chevron');
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  chevron.classList.toggle('open',!isOpen);
+  if(!isOpen){ const ta=document.getElementById('script-ta-3'); ta.value=S.script; updateCharCount3(); }
+}
+
+// ── Individual regeneration ───────────────────────────────────────────────
+async function regenTitle(comment='') {
+  sectionLoading('title',true);
+  try {
+    const res=await fetch('/api/regen-title',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({item:S.item,script:S.script,comment})});
+    const data=await res.json();
+    if(data.success){S.title=data.title;document.getElementById('title-input').value=data.title;saveState();}
+    else showToast('제목 생성 실패');
+  }catch(e){showToast('오류: '+e.message);}
+  finally{sectionLoading('title',false);}
+}
+async function regenThumbText(comment='') {
+  sectionLoading('thumb-text',true);
+  try {
+    const title=document.getElementById('title-input').value||S.title;
+    const res=await fetch('/api/regen-thumbnail-text',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({item:S.item,title,comment})});
+    const data=await res.json();
+    if(data.success){S.thumbnailText=data.thumbnail_text;document.getElementById('thumb-text-input').value=data.thumbnail_text;saveState();}
+    else showToast('생성 실패');
+  }catch(e){showToast('오류: '+e.message);}
+  finally{sectionLoading('thumb-text',false);}
+}
+async function regenThumbPrompt(comment='') {
+  sectionLoading('thumb-prompt',true);
+  try {
+    const title=document.getElementById('title-input').value||S.title;
+    const thumbText=document.getElementById('thumb-text-input').value||S.thumbnailText;
+    const res=await fetch('/api/regen-thumbnail-prompt',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({item:S.item,title,thumbnail_text:thumbText,comment})});
+    const data=await res.json();
+    if(data.success){
+      S.thumbnailPrompt=data.thumbnail_prompt||'';
+      S.thumbnailSearchQuery=data.thumbnail_search_query||'';
+      document.getElementById('thumb-prompt-ta').value=S.thumbnailPrompt;
+      const refEl=document.getElementById('thumb-search-ref');
+      if(S.thumbnailSearchQuery){refEl.textContent='📷 참고 검색어: '+S.thumbnailSearchQuery;refEl.style.display='block';}
+      else refEl.style.display='none';
+      saveState();
+    } else showToast('프롬프트 생성 실패');
+  }catch(e){showToast('오류: '+e.message);}
+  finally{sectionLoading('thumb-prompt',false);}
+}
+async function regenScene(idx, comment='') {
+  const loading=document.getElementById('scene-loading-'+idx);
+  if(loading) loading.style.display='flex';
+  try {
+    const res=await fetch('/api/regen-scene',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({script:S.script,scene:S.storyboard[idx],scene_idx:idx,comment})});
+    const data=await res.json();
+    if(data.success){
+      S.storyboard[idx]=data.scene;
+      const oldCard=document.getElementById('scene-card-'+idx);
+      const tmp=document.createElement('div');
+      tmp.innerHTML=buildSceneCard(data.scene,idx);
+      oldCard.replaceWith(tmp.firstElementChild);
+      closeComment('scene_'+idx);
+      saveState();
+    } else showToast('장면 재생성 실패');
+  }catch(e){showToast('오류: '+e.message);}
+  finally { if(loading) loading.style.display='none'; }
+}
+
+async function applyFactFix() {
+  const issues=lastFactResults.filter(r=>!(r.status||'').includes('✅'));
+  if(!issues.length){showToast('수정이 필요한 항목이 없습니다.');return;}
+  const btn=document.getElementById('btn-fact-fix');
+  const loading=document.getElementById('fact-fix-loading');
+  btn.disabled=true; loading.style.display='flex';
+  const comment='다음 팩트 검증 결과를 반영해서 스크립트를 수정해줘 (오류·불확실 항목 교정):\n'+
+    issues.map(r=>`- ${r.claim}: ${r.status} — ${r.detail}`).join('\n');
+  try {
+    const res=await fetch('/api/revise-script',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({script:document.getElementById('script-ta').value,comment})});
+    const data=await res.json();
+    if(data.success){
+      S.script=data.script;
+      document.getElementById('script-ta').value=data.script;
+      updateCharCount();
+      saveState();
+      showToast('팩트 반영 스크립트 수정 완료!');
+      btn.style.display='none';
+    } else showToast('수정 실패: '+(data.error||'오류'));
+  } catch(e){showToast('오류: '+e.message);}
+  finally{btn.disabled=false;loading.style.display='none';}
+}
+
+function retryStep2() {
+  hideError('s2-error');
+  document.getElementById('s2-loading').style.display='flex';
+  fetchScript(!!S.itemDetail);
+}
+function retryStep3() {
+  hideError('s3-error');
+  document.getElementById('s3-loading').style.display='flex';
+  fetchStep3();
+}
+
+// ── Archive ───────────────────────────────────────────────────────────────
+function getArchive() {
+  try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]'); }
+  catch { return []; }
+}
+
+function saveToArchive() {
+  const currentTitle=(document.getElementById('title-input')?.value||S.title||'').trim();
+  const currentThumb=(document.getElementById('thumb-text-input')?.value||S.thumbnailText||'').trim();
+  const ta3val=document.getElementById('script-ta-3')?.value;
+  const ta2val=document.getElementById('script-ta')?.value;
+  const currentScript=((ta3val&&ta3val.trim())?ta3val:(ta2val&&ta2val.trim()?ta2val:S.script||'')).trim();
+
+  if(!S.item){showToast('저장할 아이템이 없습니다.');return;}
+
+  const storyboardData=(S.storyboard||[]).map(s=>({
+    scene:s.scene, duration:s.duration, visual:s.visual, audio:s.audio,
+    caption:s.caption, script_text:s.script_text, type:s.type,
+    image_prompt:s.image_prompt||'', footage_query:s.footage_query||'',
+    character_prompt:s.character_prompt||''
+  }));
+
+  const archiveItem={
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,8),
+    savedAt: Date.now(),
+    item: S.item,
+    itemLink: S.itemLink||'',
+    title: currentTitle,
+    thumbnailText: currentThumb,
+    thumbnailPrompt: S.thumbnailPrompt||'',
+    script: currentScript,
+    storyboard: storyboardData
+  };
+
+  let archive=getArchive();
+  archive=archive.filter(a=>a.item!==S.item); // 같은 아이템 중복 제거
+  archive.unshift(archiveItem);
+  if(archive.length>50) archive=archive.slice(0,50); // 최대 50개
+  localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archive));
+  showToast('아카이브에 저장되었습니다!');
+}
+
+function deleteFromArchive(id, event) {
+  if(event) event.stopPropagation();
+  if(!confirm('이 항목을 삭제하시겠습니까?')) return;
+  let archive=getArchive();
+  archive=archive.filter(a=>a.id!==id);
+  localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archive));
+  renderArchiveList();
+  showToast('삭제되었습니다.');
+}
+
+function openArchiveItem(item) {
+  localStorage.setItem('pending_work_item', JSON.stringify({
+    item: item.item,
+    itemLink: item.itemLink||'',
+    fromArchive: true,
+    archiveData: {
+      title: item.title,
+      thumbnailText: item.thumbnailText,
+      thumbnailPrompt: item.thumbnailPrompt||'',
+      script: item.script,
+      storyboard: item.storyboard||[]
+    }
+  }));
+  const w=window.open('/?mode=work','_blank');
+  if(!w) showToast('팝업이 차단되었습니다.', 3000);
+}
+
+function openArchiveTab() {
+  window.open('/?mode=archive','_blank');
+}
+
+const _archiveItemMap={};
+function renderArchiveList() {
+  const archive=getArchive();
+  const listEl=document.getElementById('archive-list');
+  const emptyEl=document.getElementById('archive-empty');
+  if(!archive.length){
+    if(emptyEl) emptyEl.style.display='block';
+    if(listEl) listEl.innerHTML='';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display='none';
+  if(!listEl) return;
+  Object.keys(_archiveItemMap).forEach(k=>delete _archiveItemMap[k]);
+  archive.forEach(a=>{ _archiveItemMap[a.id]=a; });
+
+  listEl.innerHTML=archive.map(a=>{
+    const d=new Date(a.savedAt);
+    const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const safeId=esc(a.id);
+    return `<div class="archive-item" onclick="_openArchiveById('${safeId}')">
+      <div class="archive-item-body">
+        <div class="archive-item-title">${esc(a.title||'(제목 없음)')}</div>
+        <div class="archive-item-sub">${esc(a.item||'')}</div>
+        ${a.thumbnailText?`<div style="font-size:12px;color:var(--orange);font-weight:600;margin-bottom:3px;">🖋️ ${esc(a.thumbnailText)}</div>`:''}
+        <div class="archive-item-date">💾 ${dateStr}${a.itemLink?` · <a href="${esc(a.itemLink)}" target="_blank" onclick="event.stopPropagation();" style="color:var(--indigo);font-size:11px;">🔗 원문</a>`:''}  </div>
+      </div>
+      <div class="archive-item-actions">
+        <button class="btn btn-teal btn-xs" onclick="event.stopPropagation();_openArchiveById('${safeId}')">열기</button>
+        <button class="btn btn-ghost-gray btn-xs" onclick="deleteFromArchive('${safeId}',event)">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _openArchiveById(id) {
+  const item=_archiveItemMap[id];
+  if(!item) return;
+  openArchiveItem(item);
+}
+
+// ── Mode initialization ───────────────────────────────────────────────────
+function initWorkMode() {
+  // pending item 읽기 (1회성)
+  const raw=localStorage.getItem('pending_work_item');
+  localStorage.removeItem('pending_work_item');
+
+  if(!raw) {
+    // 아이템 없음 → 에러 표시
+    goStep(2);
+    document.getElementById('s2-error').style.display='block';
+    document.getElementById('s2-error-msg').textContent='아이템 정보가 없습니다. 메인 화면에서 아이템을 선택해주세요.';
+    return;
+  }
+
+  const data=JSON.parse(raw);
+  S.item=data.item;
+  S.itemLink=data.itemLink||'';
+
+  if(data.fromArchive && data.archiveData) {
+    // 아카이브에서 열기: 기존 작업 복원
+    const ad=data.archiveData;
+    S.title=ad.title||'';
+    S.thumbnailText=ad.thumbnailText||'';
+    S.thumbnailPrompt=ad.thumbnailPrompt||'';
+    S.thumbnailSearchQuery='';
+    S.script=ad.script||'';
+    S.storyboard=ad.storyboard||[];
+    S.sceneAudio={}; S.sceneInterviewSegments={};
+    document.getElementById('s2-item-text').textContent=S.item;
+    document.getElementById('script-ta').value=S.script;
+    updateCharCount();
+    document.getElementById('s2-results').style.display='block';
+    renderStep3Results();
+    document.getElementById('s3-results').style.display='block';
+    goStep(3);
+  } else if(data.directInput) {
+    // 직접 입력 모드
+    loadStep2Direct();
+  } else {
+    // 자동 생성 모드
+    loadStep2(false);
+  }
+
+  // "← 아이템 변경" 버튼 숨기기
+  const itemChangeBtn=document.getElementById('btn-item-change');
+  if(itemChangeBtn) itemChangeBtn.style.display='none';
+}
+
+function initArchiveMode() {
+  // step-nav 숨기기
+  const nav=document.querySelector('.step-nav');
+  if(nav) nav.style.display='none';
+  // 모든 step-panel 비활성화
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  // archive panel 표시
+  const ap=document.getElementById('panel-archive');
+  if(ap) ap.style.display='block';
+  // 헤더 버튼 조정
+  const archiveBtn=document.getElementById('btn-archive-header');
+  if(archiveBtn) archiveBtn.style.visibility='hidden';
+  const restartBtn=document.getElementById('btn-restart-header');
+  if(restartBtn) restartBtn.style.visibility='visible';
+  renderArchiveList();
+}
+
+function generatePDF() {
+  // 화면에 표시된 최신값을 DOM에서 직접 읽음 (S.* 는 수동 편집 시 갱신 안 됨)
+  const currentTitle   = (document.getElementById('title-input')?.value       || S.title        || '동물콘텐츠').trim();
+  const currentThumb   = (document.getElementById('thumb-text-input')?.value  || S.thumbnailText || '').trim();
+  // 3단계 스크립트 텍스트에어리어 → 2단계 → S.script 순으로 폴백
+  const ta3val = document.getElementById('script-ta-3')?.value;
+  const ta2val = document.getElementById('script-ta')?.value;
+  const currentScript  = (ta3val && ta3val.trim() ? ta3val : (ta2val && ta2val.trim() ? ta2val : S.script || '')).trim();
+
+  const today=new Date();
+  const dd=String(today.getDate()).padStart(2,'0');
+  const mm=String(today.getMonth()+1).padStart(2,'0');
+  const yy=today.getFullYear();
+  const dateStr=yy+''+mm+''+dd;
+  const safeTitle=currentTitle.replace(/[<>:"/\\|?*\n]/g,'').slice(0,40);
+  const filename=dateStr+'_'+safeTitle;
+
+  const itemLink=S.searchItems&&S.pickedItemIdx!==undefined?(S.searchItems[S.pickedItemIdx]?.link||''):'';
+
+  let scenes='';
+  (S.storyboard||[]).forEach((s,i)=>{
+    const st=s.type==='host'?'host':'illustration';
+    const promptId=st==='host'?`cprompt-${i}`:`sprompt-${i}`;
+    const promptEl=document.getElementById(promptId);
+    const prompt=promptEl
+      ? promptEl.value
+      : (s.type==='host'?(s.character_prompt||''):(s.type==='illustration'?(s.image_prompt||''):''));
+    scenes+=`<div class="scene">
+      <div class="scene-hd">[${i+1}] ${esc(s.scene)} <span style="opacity:.75;font-weight:400;font-size:13px;">${esc(s.duration||'')}</span>
+        <span class="badge">${esc(s.type||'')}</span>
+      </div>
+      <div class="scene-bd">
+        <div class="row"><span class="key">화면</span>${esc(s.visual||'')}</div>
+        <div class="row"><span class="key">음향</span>${esc(s.audio||'')}</div>
+        <div class="row"><span class="key">자막</span>${esc(s.caption||'')}</div>
+        ${s.script_text?`<div class="scene-script">${esc(s.script_text)}</div>`:''}
+        ${s.type==='real_footage'?`<div class="row"><span class="key">검색어</span>${esc(s.footage_query||'')}</div>`:''}
+        ${prompt?`<div class="prompt-label">이미지 프롬프트</div><div class="prompt-box">${esc(prompt)}</div>`:''}
+      </div>
+    </div>`;
+  });
+
+  const html=`<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<title>${esc(filename)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;max-width:860px;margin:0 auto;padding:28px 20px 48px;font-size:14px;line-height:1.75;color:#1E2433}
+h1{font-size:26px;font-weight:900;color:#FF6B35;margin:20px 0 6px;letter-spacing:-.5px}
+h2{font-size:16px;font-weight:800;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #E2E8F0;color:#1E2433}
+.item-box{background:#FFF0EA;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:14px}
+.item-box strong{color:#C05020}
+.item-link{color:#4A6FD4;font-size:13px;word-break:break-all}
+.thumb-text{display:inline-block;font-size:22px;font-weight:900;background:#1E2433;color:white;padding:8px 18px;border-radius:8px;margin:10px 0 20px}
+.script-box{white-space:pre-wrap;background:#F8FAFB;border-radius:10px;padding:18px;font-size:14px;line-height:1.9;border:1px solid #E2E8F0}
+.scene{border:1px solid #D1D9E8;border-radius:10px;margin-bottom:18px;overflow:hidden;page-break-inside:avoid}
+.scene-hd{background:#26B89A;color:white;padding:10px 16px;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;background:rgba(255,255,255,.25);padding:2px 8px;border-radius:10px;font-weight:400}
+.scene-bd{padding:14px 16px;background:#E6F7F4}
+.row{margin-bottom:6px;font-size:13px}
+.key{font-weight:700;color:#1a9a83;margin-right:8px}
+.scene-script{font-style:italic;color:#4A6FD4;background:#EEF2FF;padding:9px 13px;border-radius:7px;border-left:3px solid #4A6FD4;margin:10px 0;font-size:13px}
+.prompt-label{font-size:11px;font-weight:700;color:#7C5CBF;text-transform:uppercase;letter-spacing:.6px;margin:10px 0 4px}
+.prompt-box{background:#F8FAFB;border:1px solid #D1D9E8;border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;white-space:pre-wrap;word-break:break-all}
+img{max-width:100%;border-radius:8px;display:block;margin:10px 0}
+@media print{@page{margin:1.5cm}body{padding:0}}
+</style></head>
+<body>
+<div class="item-box">
+  <strong>아이템:</strong> ${esc(S.item)}
+  ${itemLink?`<br><a class="item-link" href="${esc(itemLink)}">${esc(itemLink)}</a>`:''}
+</div>
+<h1>${esc(currentTitle)}</h1>
+<div class="thumb-text">${esc(currentThumb)}</div>
+<h2>스크립트 전문</h2>
+<div class="script-box">${esc(currentScript)}</div>
+<h2>콘티 (장면별)</h2>
+${scenes}
+</body></html>`;
+
+  const win=window.open('','_blank');
+  if(!win){showToast('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.');return;}
+  win.document.write(html);
+  win.document.close();
+  win.document.title=filename;
+  setTimeout(()=>{try{win.print();}catch(e){}},1200);
+}
+
+async function applyRegen(type) {
+  const comment=document.getElementById('ctext-'+type).value.trim();
+  if(!comment){showToast('코멘트를 입력해주세요!');return;}
+  closeComment(type);
+  if(type==='title') await regenTitle(comment);
+  else if(type==='thumb_text') await regenThumbText(comment);
+  else if(type==='thumb_prompt') await regenThumbPrompt(comment);
+}
+async function applySceneRegen(idx) {
+  const comment=document.getElementById('ctext-scene_'+idx).value.trim();
+  if(!comment){showToast('코멘트를 입력해주세요!');return;}
+  closeComment('scene_'+idx);
+  await regenScene(idx,comment);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+if(APP_MODE==='main'){
+  restoreState();
+} else if(APP_MODE==='work'){
+  initWorkMode();
+} else if(APP_MODE==='archive'){
+  initArchiveMode();
+}
+</script>
+</body>
+</html>
