@@ -627,8 +627,8 @@ const S = {
   pickedItemIdx:undefined, searchItems:[],
 };
 const STORAGE_KEY = 'animal_yt_v8';
-const ARCHIVE_KEY = 'animal_yt_archive_v1';
 const MOHANA_VOICE_ID = '2tAT7azT5P0LHAQeoJ0m';
+let _archiveCache = null;
 const ANIMAL_VOICES = [
   {label:'남자', voice_id:'LS3HmRGCXV8wxCAhUbTt'},
   {label:'여자', voice_id:'vGQNBgLaiM3EdZtxIiuY'},
@@ -807,7 +807,7 @@ async function searchItems() {
   hideError('s1-error');
   try {
     // 아카이브에 저장된 아이템은 제외
-    const archive=getArchive();
+    const archive=await getArchive();
     const excludeItems=archive.map(a=>a.item).filter(Boolean).slice(0,30);
     const bodyObj={};
     if(direction) bodyObj.direction=direction;
@@ -1516,12 +1516,17 @@ function retryStep3() {
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────
-function getArchive() {
-  try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]'); }
-  catch { return []; }
+async function getArchive() {
+  if(_archiveCache!==null) return _archiveCache;
+  try{
+    const r=await fetch('/api/archive');
+    const d=await r.json();
+    _archiveCache=d.success?(d.items||[]):[];
+  }catch{ _archiveCache=[]; }
+  return _archiveCache;
 }
 
-function saveToArchive() {
+async function saveToArchive() {
   const currentTitle=(document.getElementById('title-input')?.value||S.title||'').trim();
   const currentThumb=(document.getElementById('thumb-text-input')?.value||S.thumbnailText||'').trim();
   const ta3val=document.getElementById('script-ta-3')?.value;
@@ -1529,13 +1534,6 @@ function saveToArchive() {
   const currentScript=((ta3val&&ta3val.trim())?ta3val:(ta2val&&ta2val.trim()?ta2val:S.script||'')).trim();
 
   if(!S.item){showToast('저장할 아이템이 없습니다.');return;}
-
-  const storyboardData=(S.storyboard||[]).map(s=>({
-    scene:s.scene, duration:s.duration, visual:s.visual, audio:s.audio,
-    caption:s.caption, script_text:s.script_text, type:s.type,
-    image_prompt:s.image_prompt||'', footage_query:s.footage_query||'',
-    character_prompt:s.character_prompt||''
-  }));
 
   const archiveItem={
     id: Date.now().toString(36)+Math.random().toString(36).slice(2,8),
@@ -1546,25 +1544,31 @@ function saveToArchive() {
     thumbnailText: currentThumb,
     thumbnailPrompt: S.thumbnailPrompt||'',
     script: currentScript,
-    storyboard: storyboardData
+    storyboard: (S.storyboard||[]).map(s=>({
+      scene:s.scene, duration:s.duration, visual:s.visual, audio:s.audio,
+      caption:s.caption, script_text:s.script_text, type:s.type,
+      image_prompt:s.image_prompt||'', footage_query:s.footage_query||'',
+      character_prompt:s.character_prompt||''
+    }))
   };
 
-  let archive=getArchive();
-  archive=archive.filter(a=>a.item!==S.item); // 같은 아이템 중복 제거
-  archive.unshift(archiveItem);
-  if(archive.length>50) archive=archive.slice(0,50); // 최대 50개
-  localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archive));
-  showToast('아카이브에 저장되었습니다!');
+  try{
+    const r=await fetch('/api/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(archiveItem)});
+    const d=await r.json();
+    if(d.success){ _archiveCache=d.items; showToast('아카이브에 저장되었습니다!'); }
+    else showToast('저장 실패: '+(d.error||''));
+  }catch{ showToast('서버 연결 오류로 저장하지 못했습니다.'); }
 }
 
-function deleteFromArchive(id, event) {
+async function deleteFromArchive(id, event) {
   if(event) event.stopPropagation();
   if(!confirm('이 항목을 삭제하시겠습니까?')) return;
-  let archive=getArchive();
-  archive=archive.filter(a=>a.id!==id);
-  localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archive));
-  renderArchiveList();
-  showToast('삭제되었습니다.');
+  try{
+    const r=await fetch(`/api/archive/${encodeURIComponent(id)}`,{method:'DELETE'});
+    const d=await r.json();
+    if(d.success){ _archiveCache=d.items; renderArchiveList(); showToast('삭제되었습니다.'); }
+    else showToast('삭제 실패: '+(d.error||''));
+  }catch{ showToast('서버 연결 오류로 삭제하지 못했습니다.'); }
 }
 
 function openArchiveItem(item) {
@@ -1589,8 +1593,8 @@ function openArchiveTab() {
 }
 
 const _archiveItemMap={};
-function renderArchiveList() {
-  const archive=getArchive();
+async function renderArchiveList() {
+  const archive=await getArchive();
   const listEl=document.getElementById('archive-list');
   const emptyEl=document.getElementById('archive-empty');
   if(!archive.length){
@@ -1628,8 +1632,8 @@ function _openArchiveById(id) {
   openArchiveItem(item);
 }
 
-function exportArchive() {
-  const archive=getArchive();
+async function exportArchive() {
+  const archive=await getArchive();
   if(!archive.length){showToast('저장된 항목이 없습니다.');return;}
   const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1645,21 +1649,18 @@ function importArchive(event) {
   const file=event.target.files[0];
   if(!file) return;
   const reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try{
       const imported=JSON.parse(e.target.result);
       if(!Array.isArray(imported)){showToast('올바른 아카이브 파일이 아닙니다.');return;}
-      const existing=getArchive();
-      const existingIds=new Set(existing.map(a=>a.id));
-      const newItems=imported.filter(a=>a.id&&!existingIds.has(a.id));
-      if(!newItems.length){showToast('추가할 새 항목이 없습니다 (이미 모두 존재합니다).');return;}
-      const merged=[...newItems,...existing].slice(0,50);
-      localStorage.setItem(ARCHIVE_KEY,JSON.stringify(merged));
-      renderArchiveList();
-      showToast(`${newItems.length}개 항목을 가져왔습니다.`);
-    }catch(err){
-      showToast('파일을 읽는 중 오류가 발생했습니다.');
-    }
+      const r=await fetch('/api/archive/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(imported)});
+      const d=await r.json();
+      if(d.success){
+        _archiveCache=d.items;
+        renderArchiveList();
+        showToast(d.added>0?`${d.added}개 항목을 가져왔습니다.`:'추가할 새 항목이 없습니다 (이미 모두 존재합니다).');
+      }else{ showToast('가져오기 실패: '+(d.error||'')); }
+    }catch{ showToast('파일을 읽는 중 오류가 발생했습니다.'); }
     event.target.value='';
   };
   reader.readAsText(file);
@@ -1713,7 +1714,7 @@ function initWorkMode() {
   if(itemChangeBtn) itemChangeBtn.style.display='none';
 }
 
-function initArchiveMode() {
+async function initArchiveMode() {
   // step-nav 숨기기
   const nav=document.querySelector('.step-nav');
   if(nav) nav.style.display='none';
@@ -1727,7 +1728,7 @@ function initArchiveMode() {
   if(archiveBtn) archiveBtn.style.visibility='hidden';
   const restartBtn=document.getElementById('btn-restart-header');
   if(restartBtn) restartBtn.style.visibility='visible';
-  renderArchiveList();
+  await renderArchiveList();
 }
 
 function generatePDF() {

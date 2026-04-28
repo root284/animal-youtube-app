@@ -9,6 +9,7 @@ __pycache__/
 # 런타임 생성 파일
 audio/
 images/
+archive.json
 
 # 에셋 하위 (영상 폴더만 제외, 캐릭터시트·파비콘은 포함)
 assets/footage/

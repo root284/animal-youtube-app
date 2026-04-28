@@ -47,11 +47,12 @@ MOHANA_VOICE_ID = "2tAT7azT5P0LHAQeoJ0m"  # 프론트에서 모하나 요청 식
 SUPERTONE_VOICE_ID = "400c24c9a2718734a5b404"
 SUPERTONE_TTS_BASE = "https://supertoneapi.com/v1/text-to-speech"
 
-BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-AUDIO_DIR  = os.path.join(BASE_DIR, "audio")
-IMAGES_DIR = os.path.join(BASE_DIR, "images")
-ASSETS_DIR = os.path.join(BASE_DIR, "assets")
-MOHANA_IMAGE = os.path.join(ASSETS_DIR, "mohana_turnaround.png")
+BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+AUDIO_DIR     = os.path.join(BASE_DIR, "audio")
+IMAGES_DIR    = os.path.join(BASE_DIR, "images")
+ASSETS_DIR    = os.path.join(BASE_DIR, "assets")
+MOHANA_IMAGE  = os.path.join(ASSETS_DIR, "mohana_turnaround.png")
+ARCHIVE_FILE  = os.path.join(BASE_DIR, "archive.json")
 
 for d in (AUDIO_DIR, IMAGES_DIR):
     os.makedirs(d, exist_ok=True)
@@ -205,6 +206,62 @@ def serve_images(filename):
 @app.route("/assets/<path:filename>")
 def serve_assets(filename):
     return send_from_directory(ASSETS_DIR, filename)
+
+
+# ── Archive helpers ───────────────────────────────────────────────────────────
+
+def _load_archive() -> list:
+    try:
+        with open(ARCHIVE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def _save_archive(items: list) -> None:
+    with open(ARCHIVE_FILE, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/archive", methods=["GET"])
+def api_archive_get():
+    return jsonify({"success": True, "items": _load_archive()})
+
+
+@app.route("/api/archive", methods=["POST"])
+def api_archive_post():
+    item = request.json
+    if not isinstance(item, dict) or not item.get("id"):
+        return jsonify({"success": False, "error": "유효하지 않은 데이터"}), 400
+    archive = _load_archive()
+    archive = [a for a in archive if a.get("item") != item.get("item")]
+    archive.insert(0, item)
+    if len(archive) > 50:
+        archive = archive[:50]
+    _save_archive(archive)
+    return jsonify({"success": True, "items": archive})
+
+
+@app.route("/api/archive/import", methods=["POST"])
+def api_archive_import():
+    incoming = request.json
+    if not isinstance(incoming, list):
+        return jsonify({"success": False, "error": "배열이 아닙니다"}), 400
+    existing = _load_archive()
+    existing_ids = {a.get("id") for a in existing}
+    new_items = [a for a in incoming if a.get("id") and a["id"] not in existing_ids]
+    merged = new_items + existing
+    if len(merged) > 50:
+        merged = merged[:50]
+    _save_archive(merged)
+    return jsonify({"success": True, "added": len(new_items), "items": merged})
+
+
+@app.route("/api/archive/<item_id>", methods=["DELETE"])
+def api_archive_delete(item_id):
+    archive = _load_archive()
+    archive = [a for a in archive if a.get("id") != item_id]
+    _save_archive(archive)
+    return jsonify({"success": True, "items": archive})
 
 
 # ── API Routes ────────────────────────────────────────────────────────────────
