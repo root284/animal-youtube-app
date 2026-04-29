@@ -532,7 +532,7 @@ def _call_supertone_tts(text: str, speed: float) -> bytes:
         "language": "ko",
         "model": "sona_speech_2",
         "output_format": "mp3",
-        "config": {"speed": speed},
+        "voice_settings": {"speed": speed},
     }
     resp = http_requests.post(url, headers=headers, json=payload, timeout=60)
     if resp.status_code == 429:
