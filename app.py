@@ -52,7 +52,8 @@ AUDIO_DIR     = os.path.join(BASE_DIR, "audio")
 IMAGES_DIR    = os.path.join(BASE_DIR, "images")
 ASSETS_DIR    = os.path.join(BASE_DIR, "assets")
 MOHANA_IMAGE  = os.path.join(ASSETS_DIR, "mohana_turnaround.png")
-ARCHIVE_FILE  = os.path.join(BASE_DIR, "archive.json")
+_DATA_DIR     = os.environ.get("DATA_DIR", BASE_DIR)
+ARCHIVE_FILE  = os.path.join(_DATA_DIR, "archive.json")
 
 for d in (AUDIO_DIR, IMAGES_DIR):
     os.makedirs(d, exist_ok=True)
